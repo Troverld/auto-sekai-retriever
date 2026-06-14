@@ -14,25 +14,53 @@ Phase 2 参考现有 [pysrc/test.py](/home/xtx/auto-sekai-retriever/pysrc/test.p
 
 ## 2. 模型输出必须强约束
 
-不要只让模型返回自由文本。建议强制返回 JSON，对四类语料分别输出数组：
+不要只让模型返回自由文本。建议强制返回 JSON，对五类语料分别输出对象数组。每个对象包含 `text` 和 `weight` 两个字段，其中 `weight` 只能是 `1.0/0.8/0.6/0.4/0.2` 之一：
 
 ```json
 {
-  "objective_actions": ["..."],
-  "basic_emotions": ["..."],
-  "meme_phrases": ["..."],
-  "daily_long_sentences": ["..."]
+  "objective_actions": [{"text": "...", "weight": 1.0}],
+  "basic_emotions": [{"text": "...", "weight": 0.8}],
+  "meme_phrases": [{"text": "...", "weight": 0.6}],
+  "punchy_chat_quotes": [{"text": "...", "weight": 1.0}],
+  "polite_replies": [{"text": "...", "weight": 0.8}]
 }
 ```
 
 数量约束：
 
-1. `objective_actions`: 3
+1. `objective_actions`: 5
 2. `basic_emotions`: 3
-3. `meme_phrases`: 7
-4. `daily_long_sentences`: 7
+3. `meme_phrases`: 5
+4. `punchy_chat_quotes`: 7
+5. `polite_replies`: 5
 
-总数固定为 20，便于后续 embedding 与前端检索逻辑保持定长。
+总数固定为 25，便于后续 embedding 与前端检索逻辑保持定长。
+
+五类定义：
+
+1. `objective_actions`
+   只描述肢体动作、面部五官变形、二次元漫符或特殊道具，不描述纯外貌。
+2. `basic_emotions`
+   基础情绪词。
+3. `meme_phrases`
+   中文互联网流行梗、吐槽或短表达。
+4. `punchy_chat_quotes`
+   熟人聊天时可直接发送的高浓度短句，偏口语、发疯、阴阳怪气或极度兴奋。
+5. `polite_replies`
+   更适合略严肃社交场景的礼貌短回复。
+
+`weight` 表示该条和图片的匹配度：
+
+1. `1.0`
+   最核心、最典型的表达。
+2. `0.8`
+   非常贴切，但略次于核心表达。
+3. `0.6`
+   合理可用，但更泛化。
+4. `0.4`
+   边缘匹配。
+5. `0.2`
+   仅作为补充候选。
 
 写 prompt 时显式要求不能输出重复描述。pytest 时为节省 token，可以使用 `OPENAI_MODEL=gpt-5.2` + `REASONING_EFFORT=low`；真实标注时使用 `5.5` + `medium`。
 
@@ -45,6 +73,7 @@ Phase 2 参考现有 [pysrc/test.py](/home/xtx/auto-sekai-retriever/pysrc/test.p
 3. 风格约束：禁止输出英文、解释性句子、编号前缀、括号注释。
 4. 安全清洗：过滤明显错角色、错误视觉事实、与图无关内容。
 5. 不足补齐：若某一类不足指定数量，允许发起单图二次补全请求。
+6. 权重校验：所有条目的 `weight` 必须属于离散集合 `1.0/0.8/0.6/0.4/0.2`。
 
 建议保留两份文件：
 
@@ -62,17 +91,15 @@ Phase 2 参考现有 [pysrc/test.py](/home/xtx/auto-sekai-retriever/pysrc/test.p
     {
       "image_id": "mafuyu_017",
       "relative_path": "img/Mafuyu/Mafuyu_17.png",
-      "texts": [
-        "叹气",
-        "无语",
-        "差不多得了"
-      ],
+      "texts": ["叹气", "无语", "差不多得了"],
+      "weights": [1.0, 0.8, 0.6],
       "buckets": {
-        "objective_actions": ["叹气", "扶额", "侧目"],
-        "basic_emotions": ["无语", "烦躁", "冷淡"],
-        "meme_phrases": ["差不多得了", "你继续", "行行行都对"],
-        "daily_long_sentences": [
-          "这天是一秒钟也聊不下去了"
+        "objective_actions": [{"text": "叹气", "weight": 1.0}],
+        "basic_emotions": [{"text": "无语", "weight": 0.8}],
+        "meme_phrases": [{"text": "差不多得了", "weight": 0.6}],
+        "punchy_chat_quotes": [{"text": "给老子整不会了", "weight": 1.0}],
+        "polite_replies": [
+          {"text": "收到，非常感谢", "weight": 0.8}
         ]
       }
     }
@@ -82,8 +109,9 @@ Phase 2 参考现有 [pysrc/test.py](/home/xtx/auto-sekai-retriever/pysrc/test.p
 
 其中：
 
-1. `texts` 为最终平铺后的 20 句数组。
-2. `buckets` 用于保留语义分桶，方便后续重新调权、诊断质量。
+1. `texts` 为最终平铺后的 25 条文本数组。
+2. `weights` 与 `texts` 一一对应，供后续 embedding 检索加权。
+3. `buckets` 用于保留语义分桶，方便后续重新调权、诊断质量。
 
 ## 5. 断点续跑与缓存
 

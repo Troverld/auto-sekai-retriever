@@ -55,6 +55,7 @@ def build_corpus_item(manifest_item: ManifestItem, raw_text: str) -> dict[str, A
         "relative_path": manifest_item.relative_path,
         "sha256": manifest_item.sha256,
         "texts": cleaned.texts,
+        "weights": cleaned.weights,
         "buckets": cleaned.buckets,
         "texts_hash": sha256_bytes("\n".join(cleaned.texts).encode("utf-8")),
     }
@@ -73,7 +74,7 @@ def write_corpus(corpus_path: Path, model_name: str, items: list[dict[str, Any]]
 def should_skip(manifest_item: ManifestItem, existing: dict[str, Any], force: bool) -> bool:
     if force or not existing:
         return False
-    return existing.get("sha256") == manifest_item.sha256 and len(existing.get("texts", [])) == 20
+    return existing.get("sha256") == manifest_item.sha256 and len(existing.get("texts", [])) == 25
 
 
 def select_manifest_items(
@@ -139,4 +140,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
