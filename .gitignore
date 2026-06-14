@@ -27,3 +27,6 @@ src/*.dev.jsx
 src/*.old
 
 .env
+.venv/
+__pycache__/
+.pytest_cache/

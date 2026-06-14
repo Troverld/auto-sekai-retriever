@@ -4,21 +4,22 @@
 
 ## 1. 输入输出
 
+当前 `public/img/` 已有图片，只作为历史版本保留。
+
 输入：
 
-1. 当前 `public/img/` 已有图片
-2. 目标站点规则，例如 `https://pjsk.moe/sticker-maker/img/{character}/{name}.png`
+1. `public/img/` 下的所有文件夹名称统一为小写后即为目标站点名称中 `{character}` 一栏的备选项。
+2. 目标站点规则，即为 `https://pjsk.moe/sticker-maker/img/{character}/{name}.png`。一个经验证后合法例子是：`https://pjsk.moe/sticker-maker/img/mafuyu/mafuyu17.png`。
 
 输出：
 
-1. 更新后的 `public/img/`
+1. `public/search/url.json`，记录所有爬取的合法链接。
 2. `public/search/manifest.json`
-3. 可选的下载日志 `data/interim/download_report.json`
 
 ## 2. 不要忽略的细节
 
 1. 文件名规范化。
-   现有目录大小写并不完全统一，例如 `airi/`、`an/`、`ena/` 与 `Mafuyu/` 并存。需要定义唯一规范 ID，避免后续路径和主键混乱。
+   现有目录大小写并不完全统一，例如 `airi/`、`an/`、`ena/` 与 `Mafuyu/` 并存。输出时统一为小写。
 2. 图片主键不要直接绑定相对路径。
    建议定义稳定 `image_id`，例如 `mafuyu_001`、`airi_018`。
 3. 保留源信息。
@@ -71,9 +72,9 @@ Phase 5 不单独拆文档，增量约束从第一版起并入本阶段。
 建议拆分为以下职责：
 
 1. `discover.py`
-   负责枚举候选 URL 或候选图片编号。
+   负责枚举候选 URL 或候选图片编号，产出 `public/search/url.json`。
 2. `download.py`
-   负责实际下载、跳过逻辑、失败重试和写盘。
+   负责实际下载、跳过逻辑、失败重试和写盘，产出 `public/img_new` 下的文件，排列格式同现有的 `public/img`，以角色名称分列为各个子文件夹。
 3. `manifest.py`
    负责计算 hash、尺寸与 `manifest.json` 输出。
 
