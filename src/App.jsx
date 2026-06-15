@@ -10,6 +10,7 @@ import TextField from "@mui/material/TextField";
 import Alert from "@mui/material/Alert";
 
 import Canvas from "./components/Canvas";
+import Info from "./components/Info";
 import Picker from "./components/Picker";
 import SearchPicker from "./components/SearchPicker";
 import CHARACTER_COLOR_MAP from "./constants/characterColors";
@@ -38,6 +39,24 @@ const DEFAULT_STROKE_COLOR = "#ffffff";
 
 function buildCanvasPlaceholder(result) {
   return result?.buckets?.meme_phrases?.[0]?.text || "";
+}
+
+function pickRandomText(texts) {
+  if (texts.length === 0) {
+    return "";
+  }
+  const index = Math.floor(Math.random() * texts.length);
+  return texts[index];
+}
+
+function getBucketTexts(item, bucket) {
+  const entries = item?.buckets?.[bucket];
+  if (!Array.isArray(entries)) {
+    return [];
+  }
+  return entries
+    .map((entry) => entry?.text?.trim())
+    .filter((text) => Boolean(text));
 }
 
 function resolveCanvasFontKey(preferredKey, text) {
@@ -82,6 +101,7 @@ function App() {
   const [loaded, setLoaded] = useState(false);
   const [fontsReady, setFontsReady] = useState(false);
   const [customImage, setCustomImage] = useState(null);
+  const [infoOpen, setInfoOpen] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -242,6 +262,31 @@ function App() {
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+  };
+
+  const applyBuiltInCanvasText = (bucket) => {
+    const placeholder = buildCanvasPlaceholder(selectedImage);
+    const currentText = textInput.trim()
+      ? textInput
+      : searchText.trim()
+        ? searchText
+        : placeholder;
+    const bucketTexts = getBucketTexts(selectedImage, bucket);
+
+    if (bucketTexts.length === 0) {
+      if (!textInput.trim() && !searchText.trim() && placeholder) {
+        setTextInput(placeholder);
+      }
+      return;
+    }
+
+    const matchedIndex = bucketTexts.findIndex((text) => text === currentText);
+    if (matchedIndex >= 0) {
+      setTextInput(bucketTexts[(matchedIndex + 1) % bucketTexts.length]);
+      return;
+    }
+
+    setTextInput(pickRandomText(bucketTexts));
   };
 
   const drawText = (ctx) => {
@@ -430,7 +475,7 @@ function App() {
           />
           <div className="search-box">
             <TextField
-              label="在这里输入待查询的文本"
+              label="输入文本，检索图库中最匹配表情包"
               size="small"
               color="secondary"
               value={searchText}
@@ -448,7 +493,7 @@ function App() {
           </div>
           <div className="search-box">
             <TextField
-              label="在这里输入希望画布上呈现的文本"
+              label="输入文本，绘制在画布上"
               size="small"
               color="secondary"
               value={textInput}
@@ -479,6 +524,24 @@ function App() {
               setMode={setMode}
               onPickResult={onPickSearchResult}
             />
+            <div className="built-in-text-buttons">
+              <Button
+                variant="contained"
+                color="secondary"
+                onClick={() => applyBuiltInCanvasText("polite_replies")}
+                disabled={!selectedImage}
+              >
+                内置礼貌用语
+              </Button>
+              <Button
+                variant="contained"
+                color="secondary"
+                onClick={() => applyBuiltInCanvasText("punchy_chat_quotes")}
+                disabled={!selectedImage}
+              >
+                内置诙谐用语
+              </Button>
+            </div>
           </div>
           <div className="buttons">
             <Button color="secondary" onClick={copy}>
@@ -666,7 +729,19 @@ function App() {
             </div>
           </div>
         </div>
+        <div className="footer-info">
+          <Button
+            color="secondary"
+            variant="contained"
+            className="info-button"
+            onClick={() => setInfoOpen(true)}
+            aria-label="项目说明"
+          >
+            ℹ
+          </Button>
+        </div>
       </div>
+      <Info open={infoOpen} handleClose={() => setInfoOpen(false)} />
     </div>
   );
 }

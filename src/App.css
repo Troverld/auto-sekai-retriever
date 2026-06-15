@@ -94,6 +94,13 @@
   flex-wrap: wrap;
 }
 
+.built-in-text-buttons {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: nowrap;
+}
+
 .modal > .MuiPopover-paper {
   overflow: hidden;
 }
@@ -123,6 +130,46 @@
 .top-alert {
   margin: 1rem auto 0;
   width: min(720px, calc(100vw - 32px));
+}
+
+.footer-info {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+.info-button.MuiButton-root {
+  min-width: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+  font-size: 1.15rem;
+  line-height: 1;
+  padding: 0;
+}
+
+.info-content {
+  color: rgba(0, 0, 0, 0.78);
+  line-height: 1.7;
+}
+
+.info-line {
+  margin: 0 0 0.9rem;
+  word-break: break-word;
+}
+
+.info-line:last-child {
+  margin-bottom: 0;
+}
+
+.info-line a {
+  color: #ca92e3;
+  text-decoration: none;
+}
+
+.info-line a:hover {
+  text-decoration: underline;
 }
 
 .search-mode-row {
