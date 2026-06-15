@@ -22,11 +22,11 @@ export default function Info({ open, handleClose, config }) {
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
       >
-        <DialogTitle id="alert-dialog-title">Info</DialogTitle>
+        <DialogTitle id="alert-dialog-title">说明</DialogTitle>
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
             <Typography variant="h6" component="h3">
-              This tool made possible by:
+              本工具得以实现，感谢：
             </Typography>
             <List>
               <ListItem
@@ -43,7 +43,7 @@ export default function Info({ open, handleClose, config }) {
                 </ListItemAvatar>
                 <ListItemText
                   primary="Ayaka"
-                  secondary="for the original idea"
+                  secondary="原始创意来源"
                 />
               </ListItem>
               <ListItem
@@ -60,7 +60,7 @@ export default function Info({ open, handleClose, config }) {
                 </ListItemAvatar>
                 <ListItemText
                   primary="Modder4869"
-                  secondary="for the help with the code"
+                  secondary="代码方面的帮助"
                 />
               </ListItem>
               <ListItem
@@ -78,7 +78,7 @@ export default function Info({ open, handleClose, config }) {
                 </ListItemAvatar>
                 <ListItemText
                   primary="u/SherenPlaysGames"
-                  secondary="for the original stamps"
+                  secondary="原始表情素材来源"
                 />
               </ListItem>
               <ListItem
@@ -96,12 +96,12 @@ export default function Info({ open, handleClose, config }) {
                 </ListItemAvatar>
                 <ListItemText
                   primary="Contributors"
-                  secondary="for the help with the code"
+                  secondary="代码方面的帮助"
                 />
               </ListItem>
             </List>
             <Typography variant="h6" component="h3">
-              You can find the source code or contribute here:
+              源代码与贡献入口：
             </Typography>
             <List>
               <ListItem
@@ -116,21 +116,21 @@ export default function Info({ open, handleClose, config }) {
                     src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
                   />
                 </ListItemAvatar>
-                <ListItemText primary="GitHub" secondary="Source Code" />
+                <ListItemText primary="GitHub" secondary="源代码" />
               </ListItem>
             </List>
             <Typography variant="h6" component="h3">
-              Total stickers made using the app:
+              使用本应用生成的表情总数：
               <br />
               {config?.global
-                ? config?.global.toLocaleString() + " Sticker"
-                : "not available"}
+                ? `${config.global.toLocaleString()} 张`
+                : "暂无数据"}
             </Typography>
           </DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose} color="secondary" autoFocus>
-            Close
+            关闭
           </Button>
         </DialogActions>
       </Dialog>

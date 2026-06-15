@@ -97,7 +97,7 @@ function App() {
           setDatasetState({
             status: "error",
             dataset: null,
-            error: error instanceof Error ? error.message : "failed to load search dataset",
+            error: error instanceof Error ? error.message : "加载检索数据失败",
           });
         }
       }
@@ -426,7 +426,7 @@ function App() {
           />
           <div className="search-box">
             <TextField
-              label="检索文本"
+              label="在这里输入待查询的文本"
               size="small"
               color="secondary"
               value={searchText}
@@ -444,7 +444,7 @@ function App() {
           </div>
           <div className="search-box">
             <TextField
-              label="画布文本"
+              label="在这里输入希望画布上呈现的文本"
               size="small"
               color="secondary"
               value={textInput}
@@ -478,15 +478,15 @@ function App() {
           </div>
           <div className="buttons">
             <Button color="secondary" onClick={copy}>
-              copy
+              复制画布
             </Button>
             <Button color="secondary" onClick={download}>
-              download
+              下载图片
             </Button>
           </div>
           <div className="settings">
             <div>
-              <label>Font: </label>
+              <label>字体: </label>
               <TextField
                 select
                 size="small"
@@ -497,11 +497,11 @@ function App() {
               >
                 <MenuItem value="yuruka">YurukaStd</MenuItem>
                 <MenuItem value="fangtang">SSFangTangTi</MenuItem>
-                <MenuItem value="system">System Sans</MenuItem>
+                <MenuItem value="system">系统无衬线</MenuItem>
               </TextField>
             </div>
             <div>
-              <label>Rotate: </label>
+              <label>旋转角度: </label>
               <Slider
                 value={rotate}
                 onChange={(_, value) => setRotate(value)}
@@ -514,7 +514,7 @@ function App() {
             </div>
             <div>
               <label>
-                <nobr>Font size: </nobr>
+                <nobr>字体大小: </nobr>
               </label>
               <Slider
                 value={fontSize}
@@ -528,7 +528,7 @@ function App() {
             </div>
             <div>
               <label>
-                <nobr>Spacing: </nobr>
+                <nobr>行间距: </nobr>
               </label>
               <Slider
                 value={spaceSize}
@@ -542,7 +542,7 @@ function App() {
             </div>
             <div>
               <label>
-                <nobr>Letter spacing: </nobr>
+                <nobr>字间距: </nobr>
               </label>
               <Slider
                 value={letterSpacing}
@@ -556,7 +556,7 @@ function App() {
             </div>
             <div>
               <label>
-                <nobr>Stroke width: </nobr>
+                <nobr>描边宽度: </nobr>
               </label>
               <Slider
                 value={strokeWidth}
@@ -569,7 +569,7 @@ function App() {
               />
             </div>
             <div>
-              <label>Curve (Beta): </label>
+              <label>弧形文本: </label>
               <Switch
                 checked={curve}
                 onChange={(event) => setCurve(event.target.checked)}
@@ -577,7 +577,7 @@ function App() {
               />
             </div>
             <div>
-              <label>Vertical text: </label>
+              <label>竖直文本: </label>
               <Switch
                 checked={vertical}
                 onChange={(event) => setVertical(event.target.checked)}
@@ -585,7 +585,7 @@ function App() {
               />
             </div>
             <div>
-              <label>Text behind image: </label>
+              <label>文本置于图像之后: </label>
               <Switch
                 checked={textBehind}
                 onChange={(event) => setTextBehind(event.target.checked)}
@@ -593,12 +593,12 @@ function App() {
               />
             </div>
             <div className="color-row">
-              <label>Text color: </label>
+              <label>文本颜色: </label>
               <input
                 type="color"
                 value={textColor}
                 onChange={(event) => setTextColor(event.target.value)}
-                aria-label="Text color"
+                aria-label="文本颜色"
               />
               <Button
                 color="secondary"
@@ -606,16 +606,16 @@ function App() {
                 size="small"
                 onClick={() => setTextColor(activeColor)}
               >
-                Reset
+                重置
               </Button>
             </div>
             <div className="color-row">
-              <label>Stroke color: </label>
+              <label>描边颜色: </label>
               <input
                 type="color"
                 value={strokeColor}
                 onChange={(event) => setStrokeColor(event.target.value)}
-                aria-label="Stroke color"
+                aria-label="描边颜色"
               />
               <Button
                 color="secondary"
@@ -623,17 +623,17 @@ function App() {
                 size="small"
                 onClick={() => setStrokeColor(DEFAULT_STROKE_COLOR)}
               >
-                Reset
+                重置
               </Button>
             </div>
             <div className="upload-row">
-              <label>Custom image: </label>
+              <label>自定义图像: </label>
               <input
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
                 onChange={handleUpload}
-                aria-label="Custom image upload"
+                aria-label="上传自定义图像"
                 hidden
               />
               <Button
@@ -642,7 +642,7 @@ function App() {
                 size="small"
                 onClick={() => fileInputRef.current?.click()}
               >
-                Upload
+                上传
               </Button>
               {customImage && (
                 <Button
@@ -651,13 +651,13 @@ function App() {
                   size="small"
                   onClick={clearUpload}
                 >
-                  Clear
+                  清除
                 </Button>
               )}
             </div>
             <div>
               <Button color="secondary" variant="outlined" onClick={resetSettings}>
-                Reset All
+                重置全部设置
               </Button>
             </div>
           </div>

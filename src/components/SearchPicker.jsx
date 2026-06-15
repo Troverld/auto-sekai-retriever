@@ -66,7 +66,7 @@ export default function SearchPicker({
         }
         setQueryState({
           status: "error",
-          error: error instanceof Error ? error.message : "failed to rank results",
+          error: error instanceof Error ? error.message : "检索排序失败",
         });
       }
     }, 250);
@@ -88,7 +88,7 @@ export default function SearchPicker({
         onClick={(event) => setAnchorEl(event.currentTarget)}
         disabled={!query.trim()}
       >
-        Search character
+        自动检索角色
       </Button>
       <Popover
         id={id}
@@ -103,7 +103,7 @@ export default function SearchPicker({
       >
         <div className="picker-search">
           <TextField
-            label="Search query"
+            label="检索文本"
             size="small"
             color="secondary"
             value={query}

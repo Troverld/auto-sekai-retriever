@@ -36,7 +36,7 @@ export default function Picker({ items, onPickItem }) {
         color="secondary"
         onClick={(event) => setAnchorEl(event.currentTarget)}
       >
-        Pick character
+        自行选择角色
       </Button>
       <Popover
         id={id}
@@ -51,7 +51,7 @@ export default function Picker({ items, onPickItem }) {
       >
         <div className="picker-search">
           <TextField
-            label="Search character"
+            label="搜索角色"
             size="small"
             color="secondary"
             value={search}
