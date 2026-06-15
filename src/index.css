@@ -1,7 +1,11 @@
 body {
   margin: 0;
   padding: 0;
-  background-color: rgb(87, 73, 91);
+  background:
+    radial-gradient(circle at top, rgba(255, 181, 114, 0.22), transparent 28%),
+    linear-gradient(180deg, #24192d 0%, #131626 48%, #0d111d 100%);
+  background-attachment: fixed;
+  font-family: "SSFangTangTi", sans-serif;
 }
 
 @font-face {

@@ -52,6 +52,6 @@ def load_phase3_config(project_root: Path | None = None) -> Phase3Config:
         data_root=data_root,
         search_root=search_root,
         cache_root=cache_root,
-        embedding_model=os.getenv("ASR_EMBEDDING_MODEL", "BAAI/bge-large-zh-v1.5"),
+        embedding_model=os.getenv("ASR_EMBEDDING_MODEL", "BAAI/bge-small-zh-v1.5"),
         embedding_batch_size=int(os.getenv("ASR_EMBEDDING_BATCH_SIZE", "16")),
     )

@@ -30,16 +30,14 @@ public/search/
 1. 静态加载 `manifest.json`、`corpus.json`、`embeddings.json`
 2. 加载浏览器侧 query embedding 模型
 3. 用户输入防抖
-4. 计算 query 与多向量库之间的相似度
-5. 按五个语义桶分别做带权 max
-6. 计算所有 25 向量的带权平均相似度
-7. 按当前模式权重合成最终分数
-8. 支持礼貌/轻松两种模式切换
-9. 输出最终 Top-K 图片结果
+4. 参考 phase3 中的描述计算分数
+5. 按当前模式权重合成最终分数
+6. 支持礼貌/轻松两种模式切换
+7. 输出排序后的图片结果，格式参考现有前端中 `pick character` 按钮的效果。
 
 ## 3. 模型加载约束
 
-前端模型建议使用与离线阶段同 family 的轻量版本。
+前端模型建议使用与离线阶段同 family 的轻量版本。这个轻量版本应当同样缓存于 `data/cache/huggingface` 下，只不过被 `.gitignore` 强制 track，而不是手动从 `huggingface` 爬取。
 
 实现上要满足：
 
