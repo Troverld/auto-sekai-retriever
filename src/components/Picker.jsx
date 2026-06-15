@@ -5,63 +5,27 @@ import {
   Button,
   TextField,
 } from "@mui/material";
-import { useState, useMemo } from "react";
-import characters from "../characters.json";
+import { useMemo, useState } from "react";
 
-export default function Picker({ setCharacter }) {
+export default function Picker({ items, onPickItem }) {
   const [anchorEl, setAnchorEl] = useState(null);
   const [search, setSearch] = useState("");
-
-  const handleClick = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
 
   const open = Boolean(anchorEl);
   const id = open ? "picker" : undefined;
 
-  // Memoize the filtered image list items to avoid recomputing them
-  // at every render
-  const memoizedImageListItems = useMemo(() => {
-    const s = search.toLowerCase();
-    return characters.map((c, index) => {
-      if (
-        s === c.id ||
-        c.name.toLowerCase().includes(s) ||
-        c.character.toLowerCase().includes(s)
-      ) {
-        return (
-          <ImageListItem
-            key={index}
-            onClick={() => {
-              handleClose();
-              setCharacter(index);
-            }}
-            sx={{
-              cursor: "pointer",
-              "&:hover": {
-                opacity: 0.5,
-              },
-              "&:active": {
-                opacity: 0.8,
-              },
-            }}
-          >
-            <img
-              src={`/img/${c.img}`}
-              srcSet={`/img/${c.img}`}
-              alt={c.name}
-              loading="lazy"
-            />
-          </ImageListItem>
-        );
+  const filteredItems = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+    return items.filter((item) => {
+      if (!keyword) {
+        return true;
       }
-      return null;
+      return (
+        item.image_id.toLowerCase().includes(keyword) ||
+        item.relative_path.toLowerCase().includes(keyword)
+      );
     });
-  }, [search, setCharacter]);
+  }, [items, search]);
 
   return (
     <div>
@@ -69,7 +33,7 @@ export default function Picker({ setCharacter }) {
         aria-describedby={id}
         variant="contained"
         color="secondary"
-        onClick={handleClick}
+        onClick={(event) => setAnchorEl(event.currentTarget)}
       >
         Pick character
       </Button>
@@ -77,7 +41,7 @@ export default function Picker({ setCharacter }) {
         id={id}
         open={open}
         anchorEl={anchorEl}
-        onClose={handleClose}
+        onClose={() => setAnchorEl(null)}
         anchorOrigin={{
           vertical: "bottom",
           horizontal: "left",
@@ -90,9 +54,9 @@ export default function Picker({ setCharacter }) {
             size="small"
             color="secondary"
             value={search}
-            multiline={true}
+            multiline
             fullWidth
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(event) => setSearch(event.target.value)}
           />
         </div>
         <div className="image-grid-wrapper">
@@ -106,7 +70,31 @@ export default function Picker({ setCharacter }) {
             rowHeight={140}
             className="image-grid"
           >
-            {memoizedImageListItems}
+            {filteredItems.map((item) => (
+              <ImageListItem
+                key={item.image_id}
+                onClick={() => {
+                  setAnchorEl(null);
+                  onPickItem(item);
+                }}
+                sx={{
+                  cursor: "pointer",
+                  "&:hover": {
+                    opacity: 0.5,
+                  },
+                  "&:active": {
+                    opacity: 0.8,
+                  },
+                }}
+              >
+                <img
+                  src={`/${item.relative_path}`}
+                  srcSet={`/${item.relative_path}`}
+                  alt={item.image_id}
+                  loading="lazy"
+                />
+              </ImageListItem>
+            ))}
           </ImageList>
         </div>
       </Popover>

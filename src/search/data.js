@@ -85,6 +85,7 @@ export async function loadSearchDataset() {
 
     return {
       image_id: item.image_id,
+      character: manifestItem.character,
       relative_path: manifestItem.relative_path,
       texts: corpusItem.texts,
       entries,

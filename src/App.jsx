@@ -1,24 +1,36 @@
 import "./App.css";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  Alert,
-  Button,
-  Chip,
-  CircularProgress,
-  Slider,
-  TextField,
-  ToggleButton,
-  ToggleButtonGroup,
-} from "@mui/material";
+import Button from "@mui/material/Button";
+import CircularProgress from "@mui/material/CircularProgress";
+import Slider from "@mui/material/Slider";
+import Switch from "@mui/material/Switch";
+import TextField from "@mui/material/TextField";
+import Alert from "@mui/material/Alert";
 
-import SearchResults from "./components/SearchResults";
-import { MODE_WEIGHTS } from "./search/constants";
-import { loadSearchDataset, rankSearchResults } from "./search/data";
-import { embedQueryText, getQueryEmbedderConfig } from "./search/queryEmbedder";
+import Canvas from "./components/Canvas";
+import Picker from "./components/Picker";
+import SearchPicker from "./components/SearchPicker";
+import characters from "./characters.json";
+import { loadSearchDataset } from "./search/data";
+import { normalizeImageKey, toImgNewPath } from "./utils/imagePath";
 
-const DEFAULT_QUERY = "礼貌地说先这样吧";
-const DEFAULT_TOP_K = 12;
+const { ClipboardItem } = window;
+const CHARACTER_COLOR_MAP = Object.fromEntries(
+  characters.map((item) => [item.character.toLowerCase(), item.color])
+);
+
+function resolveCharacterIndex(result) {
+  if (!result) {
+    return null;
+  }
+  const resultKey = normalizeImageKey(result.relative_path);
+  return characters.findIndex((item) => normalizeImageKey(item.img) === resultKey);
+}
+
+function buildFallbackText(result) {
+  return result?.texts?.[0] || "";
+}
 
 function App() {
   const [datasetState, setDatasetState] = useState({
@@ -26,40 +38,40 @@ function App() {
     dataset: null,
     error: "",
   });
-  const [query, setQuery] = useState(DEFAULT_QUERY);
   const [mode, setMode] = useState("polite");
-  const [topK, setTopK] = useState(DEFAULT_TOP_K);
-  const [queryState, setQueryState] = useState({
-    status: "idle",
-    error: "",
+  const [character, setCharacter] = useState(49);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [searchText, setSearchText] = useState("");
+  const [textInput, setTextInput] = useState("");
+  const [position, setPosition] = useState({
+    x: characters[49].defaultText.x,
+    y: characters[49].defaultText.y,
   });
-  const [results, setResults] = useState([]);
-  const [selectedResult, setSelectedResult] = useState(null);
+  const [fontSize, setFontSize] = useState(characters[49].defaultText.s);
+  const [spaceSize, setSpaceSize] = useState(1);
+  const [rotate, setRotate] = useState(characters[49].defaultText.r);
+  const [curve, setCurve] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-
     async function bootstrap() {
       try {
         const dataset = await loadSearchDataset();
-        if (cancelled) {
-          return;
+        if (!cancelled) {
+          setDatasetState({ status: "ready", dataset, error: "" });
         }
-        setDatasetState({ status: "ready", dataset, error: "" });
       } catch (error) {
-        if (cancelled) {
-          return;
+        if (!cancelled) {
+          setDatasetState({
+            status: "error",
+            dataset: null,
+            error: error instanceof Error ? error.message : "failed to load search dataset",
+          });
         }
-        setDatasetState({
-          status: "error",
-          dataset: null,
-          error: error instanceof Error ? error.message : "failed to load search dataset",
-        });
       }
     }
-
     bootstrap();
-
     return () => {
       cancelled = true;
     };
@@ -67,191 +79,312 @@ function App() {
 
   useEffect(() => {
     if (datasetState.status !== "ready") {
-      return undefined;
+      return;
     }
-
-    const trimmed = query.trim();
-    if (!trimmed) {
-      setResults([]);
-      setSelectedResult(null);
-      setQueryState({ status: "idle", error: "" });
-      return undefined;
+    if (selectedImage) {
+      return;
     }
+    const fallbackPath = `img_new/${characters[character].img.toLowerCase()}`;
+    const matched = datasetState.dataset.items.find(
+      (item) => item.relative_path === fallbackPath
+    );
+    if (matched) {
+      setSelectedImage(matched);
+    }
+  }, [character, datasetState, selectedImage]);
 
-    let cancelled = false;
-    setQueryState({ status: "embedding", error: "" });
+  useEffect(() => {
+    const defaults = characters[character].defaultText;
+    setPosition({ x: defaults.x, y: defaults.y });
+    setRotate(defaults.r);
+    setFontSize(defaults.s);
+    setLoaded(false);
+  }, [character]);
 
-    const timer = window.setTimeout(async () => {
-      try {
-        const queryVector = await embedQueryText(trimmed);
-        if (cancelled) {
-          return;
-        }
+  const displayText = textInput.trim()
+    ? textInput
+    : searchText.trim() || buildFallbackText(selectedImage);
+  const isDerivedText = !textInput.trim() && Boolean(searchText.trim());
+  const activeColor =
+    CHARACTER_COLOR_MAP[selectedImage?.character || ""] ||
+    characters[character].color;
+  const img = useMemo(() => {
+    const image = new Image();
+    image.src = selectedImage ? `/${selectedImage.relative_path}` : toImgNewPath(characters[character].img);
+    image.onload = () => setLoaded(true);
+    return image;
+  }, [character, selectedImage]);
 
-        const ranked = rankSearchResults(
-          datasetState.dataset.items,
-          queryVector,
-          MODE_WEIGHTS[mode]
-        );
+  const angle = (Math.PI * (displayText || " ").length) / 7;
 
-        setResults(ranked);
-        setSelectedResult((current) =>
-          current
-            ? ranked.find((item) => item.image_id === current.image_id) || ranked[0] || null
-            : ranked[0] || null
-        );
-        setQueryState({ status: "ready", error: "" });
-      } catch (error) {
-        if (cancelled) {
-          return;
-        }
-        setQueryState({
-          status: "error",
-          error: error instanceof Error ? error.message : "failed to embed query",
-        });
+  const draw = (ctx) => {
+    ctx.canvas.width = 296;
+    ctx.canvas.height = 256;
+
+    if (loaded && document.fonts.check("12px YurukaStd")) {
+      const hRatio = ctx.canvas.width / img.width;
+      const vRatio = ctx.canvas.height / img.height;
+      const ratio = Math.min(hRatio, vRatio);
+      const centerShiftX = (ctx.canvas.width - img.width * ratio) / 2;
+      const centerShiftY = (ctx.canvas.height - img.height * ratio) / 2;
+
+      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      ctx.drawImage(
+        img,
+        0,
+        0,
+        img.width,
+        img.height,
+        centerShiftX,
+        centerShiftY,
+        img.width * ratio,
+        img.height * ratio
+      );
+
+      if (!displayText) {
+        return;
       }
-    }, 300);
 
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-  }, [datasetState, mode, query]);
+      ctx.font = `${fontSize}px YurukaStd, SSFangTangTi`;
+      ctx.lineWidth = 9;
+      ctx.save();
+      ctx.translate(position.x, position.y);
+      ctx.rotate(rotate / 10);
+      ctx.textAlign = "center";
+      ctx.strokeStyle = "white";
+      ctx.fillStyle = activeColor;
+      const lines = displayText.split("\n");
 
-  const selectedTexts = useMemo(() => {
-    return selectedResult ? selectedResult.texts.slice(0, 8) : [];
-  }, [selectedResult]);
+      if (curve) {
+        for (const line of lines) {
+          for (let index = 0; index < line.length; index += 1) {
+            ctx.rotate(angle / line.length / 2.5);
+            ctx.save();
+            ctx.translate(0, -1 * fontSize * 3.5);
+            ctx.strokeText(line[index], 0, 0);
+            ctx.fillText(line[index], 0, 0);
+            ctx.restore();
+          }
+        }
+      } else {
+        for (let index = 0, offset = 0; index < lines.length; index += 1) {
+          ctx.strokeText(lines[index], 0, offset);
+          ctx.fillText(lines[index], 0, offset);
+          offset += spaceSize;
+        }
+      }
+      ctx.restore();
+    }
+  };
+
+  const onPickSearchResult = (result) => {
+    setSelectedImage(result);
+    const nextIndex = resolveCharacterIndex(result);
+    if (nextIndex !== null && nextIndex >= 0) {
+      setCharacter(nextIndex);
+    }
+  };
+
+  const onPickManifestImage = (item) => {
+    setSelectedImage(item);
+    const nextIndex = resolveCharacterIndex(item);
+    if (nextIndex !== null && nextIndex >= 0) {
+      setCharacter(nextIndex);
+    }
+  };
+
+  function b64toBlob(b64Data, contentType = "image/png", sliceSize = 512) {
+    const byteCharacters = atob(b64Data);
+    const byteArrays = [];
+    for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+      const slice = byteCharacters.slice(offset, offset + sliceSize);
+      const byteNumbers = new Array(slice.length);
+      for (let index = 0; index < slice.length; index += 1) {
+        byteNumbers[index] = slice.charCodeAt(index);
+      }
+      byteArrays.push(new Uint8Array(byteNumbers));
+    }
+    return new Blob(byteArrays, { type: contentType });
+  }
+
+  const copy = async () => {
+    const canvas = document.getElementsByTagName("canvas")[0];
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        "image/png": b64toBlob(canvas.toDataURL().split(",")[1]),
+      }),
+    ]);
+  };
+
+  const download = () => {
+    const canvas = document.getElementsByTagName("canvas")[0];
+    const link = document.createElement("a");
+    link.download = `${characters[character].name}_st.ayaka.one.png`;
+    link.href = canvas.toDataURL();
+    link.click();
+  };
 
   return (
-    <div className="search-app">
-      <div className="search-shell">
-        <header className="hero-panel">
-          <div className="hero-copy">
-            <p className="eyebrow">Phase 4 Retrieval</p>
-            <h1>用一句话，从 787 张表情里检索最贴切的那张。</h1>
-            <p className="hero-description">
-              前端直接消费 `manifest.json`、`corpus.json`、`embeddings.int8.bin` 和
-              `embeddings.meta.json`，浏览器侧只负责 query embedding 与排序。
-            </p>
+    <div className="App">
+      {datasetState.status === "error" && (
+        <Alert severity="error" className="top-alert">
+          {datasetState.error}
+        </Alert>
+      )}
+      <div className="container">
+        <div className="vertical">
+          <div className="canvas">
+            <Canvas draw={draw} />
           </div>
-          <div className="hero-controls">
+          <Slider
+            value={curve ? 256 - position.y + fontSize * 3 : 256 - position.y}
+            onChange={(_, value) =>
+              setPosition({
+                ...position,
+                y: curve ? 256 + fontSize * 3 - value : 256 - value,
+              })
+            }
+            min={0}
+            max={256}
+            step={1}
+            orientation="vertical"
+            track={false}
+            color="secondary"
+          />
+        </div>
+        <div className="horizontal">
+          <Slider
+            className="slider-horizontal"
+            value={position.x}
+            onChange={(_, value) => setPosition({ ...position, x: value })}
+            min={0}
+            max={296}
+            step={1}
+            track={false}
+            color="secondary"
+          />
+          <div className="search-box">
             <TextField
-              label="Query"
+              label="检索框"
+              size="small"
               color="secondary"
-              value={query}
+              value={searchText}
               multiline
-              minRows={3}
               fullWidth
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) => setSearchText(event.target.value)}
+              placeholder="为空时沿用原始 Pick character 模式"
             />
-            <div className="toolbar-row">
-              <ToggleButtonGroup
-                exclusive
-                color="secondary"
-                value={mode}
-                onChange={(_, nextMode) => {
-                  if (nextMode) {
-                    setMode(nextMode);
-                  }
-                }}
-              >
-                <ToggleButton value="polite">礼貌模式</ToggleButton>
-                <ToggleButton value="casual">轻松模式</ToggleButton>
-              </ToggleButtonGroup>
-              <Button color="secondary" onClick={() => setQuery(DEFAULT_QUERY)}>
-                Reset Query
-              </Button>
-            </div>
-            <div className="topk-row">
-              <span>Top-K</span>
+            {datasetState.status === "loading" && (
+              <div className="search-inline-status">
+                <CircularProgress size={16} color="secondary" />
+                <span>加载检索索引中</span>
+              </div>
+            )}
+          </div>
+          <div className="settings">
+            <div>
+              <label>Rotate: </label>
               <Slider
-                value={topK}
-                onChange={(_, value) => setTopK(value)}
-                min={6}
-                max={24}
-                step={1}
+                value={rotate}
+                onChange={(_, value) => setRotate(value)}
+                min={-10}
+                max={10}
+                step={0.2}
+                track={false}
                 color="secondary"
               />
-              <strong>{topK}</strong>
             </div>
-            {datasetState.status === "loading" && (
-              <div className="status-inline">
-                <CircularProgress size={18} color="secondary" />
-                <span>Loading search assets…</span>
-              </div>
-            )}
-            {queryState.status === "embedding" && datasetState.status === "ready" && (
-              <div className="status-inline">
-                <CircularProgress size={18} color="secondary" />
-                <span>Embedding query and ranking…</span>
-              </div>
-            )}
-            {datasetState.status === "ready" && (
-              <div className="dataset-stats">
-                <Chip
-                  label={`${datasetState.dataset.meta.format.item_count} images`}
-                  size="small"
-                />
-                <Chip
-                  label={`${datasetState.dataset.meta.format.entry_count} vectors`}
-                  size="small"
-                />
-                <Chip
-                  label={`${datasetState.dataset.meta.format.dimension} dims`}
-                  size="small"
-                />
-              </div>
-            )}
+            <div>
+              <label>
+                <nobr>Font size: </nobr>
+              </label>
+              <Slider
+                value={fontSize}
+                onChange={(_, value) => setFontSize(value)}
+                min={10}
+                max={100}
+                step={1}
+                track={false}
+                color="secondary"
+              />
+            </div>
+            <div>
+              <label>
+                <nobr>Spacing: </nobr>
+              </label>
+              <Slider
+                value={spaceSize}
+                onChange={(_, value) => setSpaceSize(value)}
+                min={18}
+                max={100}
+                step={1}
+                track={false}
+                color="secondary"
+              />
+            </div>
+            <div>
+              <label>Curve (Beta): </label>
+              <Switch
+                checked={curve}
+                onChange={(event) => setCurve(event.target.checked)}
+                color="secondary"
+              />
+            </div>
           </div>
-        </header>
-
-        {datasetState.status === "error" && (
-          <Alert severity="error">{datasetState.error}</Alert>
-        )}
-        {queryState.status === "error" && <Alert severity="error">{queryState.error}</Alert>}
-        {queryState.status === "error" && getQueryEmbedderConfig() && (
-          <Alert severity="info">
-            <pre className="debug-block">
-              {JSON.stringify(getQueryEmbedderConfig(), null, 2)}
-            </pre>
-          </Alert>
-        )}
-
-        <main className="search-main">
-          <section className="preview-panel">
-            <div className="preview-frame">
-              {selectedResult ? (
-                <img
-                  src={`/${selectedResult.relative_path}`}
-                  alt={selectedResult.image_id}
-                />
-              ) : (
-                <div className="preview-empty">输入一句话开始检索</div>
-              )}
-            </div>
-            <div className="preview-meta">
-              <div>
-                <p className="eyebrow">Current Pick</p>
-                <h2>{selectedResult ? selectedResult.image_id : "No selection"}</h2>
-              </div>
-              <div className="score-card">
-                <span>Final score</span>
-                <strong>{selectedResult ? selectedResult.score.toFixed(4) : "--"}</strong>
-              </div>
-            </div>
-            <div className="preview-tags">
-              {selectedTexts.map((text) => (
-                <Chip key={text} label={text} />
-              ))}
-            </div>
-          </section>
-
-          <SearchResults
-            results={results}
-            topK={topK}
-            onPickResult={setSelectedResult}
-          />
-        </main>
+          <div className="text">
+            <TextField
+              label="实际文字框"
+              size="small"
+              color="secondary"
+              value={isDerivedText ? searchText : textInput}
+              multiline
+              fullWidth
+              onChange={(event) => setTextInput(event.target.value)}
+              placeholder={
+                selectedImage?.texts?.[0] || characters[character].defaultText.text
+              }
+              InputProps={{
+                sx: isDerivedText
+                  ? {
+                      "& textarea": {
+                        color: "rgba(255, 255, 255, 0.52)",
+                      },
+                    }
+                  : undefined,
+              }}
+              helperText={
+                textInput.trim()
+                  ? "当前使用实际文字框内容"
+                  : searchText.trim()
+                    ? "当前为空，将使用检索框内容"
+                    : "当前为空，将只切换图片不覆写默认文案"
+              }
+            />
+          </div>
+          <div className="picker">
+            {datasetState.status === "ready" && (
+              <Picker
+                items={datasetState.dataset.items}
+                onPickItem={onPickManifestImage}
+              />
+            )}
+            <SearchPicker
+              datasetState={datasetState}
+              query={searchText}
+              mode={mode}
+              setMode={setMode}
+              onPickResult={onPickSearchResult}
+            />
+          </div>
+          <div className="buttons">
+            <Button color="secondary" onClick={copy}>
+              copy
+            </Button>
+            <Button color="secondary" onClick={download}>
+              download
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );
