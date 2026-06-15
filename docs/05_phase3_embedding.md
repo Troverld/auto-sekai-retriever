@@ -82,14 +82,17 @@ data/interim/
 
 不再采用“全 25 向量直接取全局 max”。新的打分方式是六路分数加权：
 
-1. `objective_actions` 内部先求相似度，带上 weight 降序排序，然后加权后相似度再加上 0.4 + 0.3 + 0.2 + 0.1 + 0.0 得到最终得分，因为动作是非排他性的
-2. `basic_emotions` 内部相似度带权排序后 0.6 + 0.3 + 0.1，因为情绪是非排他性的
-3. `meme_phrases` 内部相似度做带权 max
-4. `punchy_chat_quotes` 内部相似度做带权 max
-5. `polite_replies` 内部相似度做带权 max
-6. 所有 25 个向量做带权平均后，与 query 的相似度
-
-其中“带权”指使用 Phase 2 输出的离散 `weight`。
+1. `objective_actions`：
+   - 令生成文本为 $s_{1:5}$，权重为 $w_{1:5}$，询问文本为 $q$。
+   - 转成特征向量后为 $v_{1:5}$ 和 $u$。
+   - 算余弦相似度得到 $c_i=\text{cosine\_similarity}(v_i,u)$。
+   - $w'=\text{softmax}(w/\tau)$，其中温度 $\tau=0.5$。
+   - 输出 $\sum c_iw'_iw_i$ 为得分。
+2. `basic_emotions`：算法同上。
+3. `meme_phrases`：直接对 $c_iw_i$ 求 max（排他性匹配）。
+4. `punchy_chat_quotes`：直接对 $c_iw_i$ 求 max（排他性匹配）。
+5. `polite_replies`：直接对 $c_iw_i$ 求 max（排他性匹配）。
+6. 所有 25 个 $v$ 关于归一化的 $w$ 做带权平均得到 $V$ 后，计算与 $u$ 的余弦相似度。
 
 支持两种模式：
 
