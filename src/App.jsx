@@ -1,8 +1,9 @@
 import "./App.css";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
+import MenuItem from "@mui/material/MenuItem";
 import Slider from "@mui/material/Slider";
 import Switch from "@mui/material/Switch";
 import TextField from "@mui/material/TextField";
@@ -11,25 +12,48 @@ import Alert from "@mui/material/Alert";
 import Canvas from "./components/Canvas";
 import Picker from "./components/Picker";
 import SearchPicker from "./components/SearchPicker";
-import characters from "./characters.json";
+import CHARACTER_COLOR_MAP from "./constants/characterColors";
 import { loadSearchDataset } from "./search/data";
-import { normalizeImageKey, toImgNewPath } from "./utils/imagePath";
 
 const { ClipboardItem } = window;
-const CHARACTER_COLOR_MAP = Object.fromEntries(
-  characters.map((item) => [item.character.toLowerCase(), item.color])
-);
+const DEFAULT_SPACE_SIZE = 25;
+const DEFAULT_STROKE_WIDTH = 9;
+const DEFAULT_POSITION = { x: 148, y: 58 };
+const DEFAULT_FONT_SIZE = 47;
+const DEFAULT_ROTATE = -2;
+const FONT_STACKS = {
+  yuruka: "YurukaStd, SSFangTangTi, sans-serif",
+  fangtang: "SSFangTangTi, sans-serif",
+  system:
+    "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+};
+const FONT_FAMILIES = {
+  yuruka: "YurukaStd",
+  fangtang: "SSFangTangTi",
+  system: "system-ui",
+};
+const DEFAULT_FONT_KEY = "fangtang";
+const DEFAULT_STROKE_COLOR = "#ffffff";
 
-function resolveCharacterIndex(result) {
-  if (!result) {
-    return null;
-  }
-  const resultKey = normalizeImageKey(result.relative_path);
-  return characters.findIndex((item) => normalizeImageKey(item.img) === resultKey);
+function buildCanvasPlaceholder(result) {
+  return result?.buckets?.meme_phrases?.[0]?.text || "";
 }
 
-function buildFallbackText(result) {
-  return result?.texts?.[0] || "";
+function resolveCanvasFontKey(preferredKey, text) {
+  if (preferredKey === "fangtang" || preferredKey === "system") {
+    return preferredKey;
+  }
+
+  const sample = text?.trim();
+  if (!sample || !document.fonts?.check) {
+    return preferredKey;
+  }
+
+  if (document.fonts.check(`16px "${FONT_FAMILIES.yuruka}"`, sample)) {
+    return preferredKey;
+  }
+
+  return "fangtang";
 }
 
 function App() {
@@ -39,19 +63,25 @@ function App() {
     error: "",
   });
   const [mode, setMode] = useState("polite");
-  const [character, setCharacter] = useState(49);
   const [selectedImage, setSelectedImage] = useState(null);
   const [searchText, setSearchText] = useState("");
   const [textInput, setTextInput] = useState("");
-  const [position, setPosition] = useState({
-    x: characters[49].defaultText.x,
-    y: characters[49].defaultText.y,
-  });
-  const [fontSize, setFontSize] = useState(characters[49].defaultText.s);
-  const [spaceSize, setSpaceSize] = useState(1);
-  const [rotate, setRotate] = useState(characters[49].defaultText.r);
+  const [position, setPosition] = useState(DEFAULT_POSITION);
+  const [fontSize, setFontSize] = useState(DEFAULT_FONT_SIZE);
+  const [spaceSize, setSpaceSize] = useState(DEFAULT_SPACE_SIZE);
+  const [rotate, setRotate] = useState(DEFAULT_ROTATE);
   const [curve, setCurve] = useState(false);
+  const [vertical, setVertical] = useState(false);
+  const [textColor, setTextColor] = useState(CHARACTER_COLOR_MAP.airi || "#ffffff");
+  const [strokeWidth, setStrokeWidth] = useState(DEFAULT_STROKE_WIDTH);
+  const [strokeColor, setStrokeColor] = useState(DEFAULT_STROKE_COLOR);
+  const [fontKey, setFontKey] = useState(DEFAULT_FONT_KEY);
+  const [textBehind, setTextBehind] = useState(false);
+  const [letterSpacing, setLetterSpacing] = useState(0);
   const [loaded, setLoaded] = useState(false);
+  const [fontsReady, setFontsReady] = useState(false);
+  const [customImage, setCustomImage] = useState(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -84,113 +114,243 @@ function App() {
     if (selectedImage) {
       return;
     }
-    const fallbackPath = `img_new/${characters[character].img.toLowerCase()}`;
-    const matched = datasetState.dataset.items.find(
-      (item) => item.relative_path === fallbackPath
-    );
-    if (matched) {
-      setSelectedImage(matched);
-    }
-  }, [character, datasetState, selectedImage]);
+    setSelectedImage(datasetState.dataset.items[0] || null);
+  }, [datasetState, selectedImage]);
 
   useEffect(() => {
-    const defaults = characters[character].defaultText;
-    setPosition({ x: defaults.x, y: defaults.y });
-    setRotate(defaults.r);
-    setFontSize(defaults.s);
+    setPosition(DEFAULT_POSITION);
+    setRotate(DEFAULT_ROTATE);
+    setFontSize(DEFAULT_FONT_SIZE);
+    setSpaceSize(DEFAULT_SPACE_SIZE);
+    setCurve(false);
+    setVertical(false);
+    setTextColor(
+      CHARACTER_COLOR_MAP[selectedImage?.character || ""] || CHARACTER_COLOR_MAP.airi || "#ffffff"
+    );
+    setStrokeWidth(DEFAULT_STROKE_WIDTH);
+    setStrokeColor(DEFAULT_STROKE_COLOR);
     setLoaded(false);
-  }, [character]);
+  }, [selectedImage]);
 
+  const canvasPlaceholder = buildCanvasPlaceholder(selectedImage);
+  const canvasInputPlaceholder = searchText.trim() || canvasPlaceholder;
   const displayText = textInput.trim()
     ? textInput
-    : searchText.trim() || buildFallbackText(selectedImage);
-  const isDerivedText = !textInput.trim() && Boolean(searchText.trim());
+    : searchText.trim() || canvasPlaceholder;
   const activeColor =
     CHARACTER_COLOR_MAP[selectedImage?.character || ""] ||
-    characters[character].color;
+    CHARACTER_COLOR_MAP.airi ||
+    "#ffffff";
   const img = useMemo(() => {
     const image = new Image();
-    image.src = selectedImage ? `/${selectedImage.relative_path}` : toImgNewPath(characters[character].img);
+    image.src = customImage
+      ? customImage
+      : selectedImage
+        ? `/${selectedImage.relative_path}`
+        : "";
     image.onload = () => setLoaded(true);
     return image;
-  }, [character, selectedImage]);
+  }, [customImage, selectedImage]);
 
   const angle = (Math.PI * (displayText || " ").length) / 7;
+  const resolvedFontKey = useMemo(
+    () => resolveCanvasFontKey(fontKey, displayText),
+    [displayText, fontKey]
+  );
 
-  const draw = (ctx) => {
-    ctx.canvas.width = 296;
-    ctx.canvas.height = 256;
+  useEffect(() => {
+    let active = true;
 
-    if (loaded && document.fonts.check("12px YurukaStd")) {
-      const hRatio = ctx.canvas.width / img.width;
-      const vRatio = ctx.canvas.height / img.height;
-      const ratio = Math.min(hRatio, vRatio);
-      const centerShiftX = (ctx.canvas.width - img.width * ratio) / 2;
-      const centerShiftY = (ctx.canvas.height - img.height * ratio) / 2;
-
-      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-      ctx.drawImage(
-        img,
-        0,
-        0,
-        img.width,
-        img.height,
-        centerShiftX,
-        centerShiftY,
-        img.width * ratio,
-        img.height * ratio
-      );
-
-      if (!displayText) {
+    async function ensureFontsReady() {
+      if (!document.fonts?.load) {
+        if (active) {
+          setFontsReady(true);
+        }
         return;
       }
 
-      ctx.font = `${fontSize}px YurukaStd, SSFangTangTi`;
-      ctx.lineWidth = 9;
-      ctx.save();
-      ctx.translate(position.x, position.y);
-      ctx.rotate(rotate / 10);
-      ctx.textAlign = "center";
-      ctx.strokeStyle = "white";
-      ctx.fillStyle = activeColor;
-      const lines = displayText.split("\n");
+      setFontsReady(false);
 
-      if (curve) {
-        for (const line of lines) {
-          for (let index = 0; index < line.length; index += 1) {
-            ctx.rotate(angle / line.length / 2.5);
-            ctx.save();
-            ctx.translate(0, -1 * fontSize * 3.5);
-            ctx.strokeText(line[index], 0, 0);
-            ctx.fillText(line[index], 0, 0);
-            ctx.restore();
-          }
+      const fontLoads = [];
+      if (resolvedFontKey === "fangtang") {
+        fontLoads.push(document.fonts.load(`16px "${FONT_FAMILIES.fangtang}"`, displayText || "测"));
+      } else if (resolvedFontKey === "yuruka") {
+        fontLoads.push(document.fonts.load(`16px "${FONT_FAMILIES.yuruka}"`, displayText || "a"));
+        fontLoads.push(document.fonts.load(`16px "${FONT_FAMILIES.fangtang}"`, displayText || "测"));
+      }
+
+      try {
+        await Promise.all(fontLoads);
+        await document.fonts.ready;
+      } finally {
+        if (active) {
+          setFontsReady(true);
         }
-      } else {
+      }
+    }
+
+    ensureFontsReady();
+
+    return () => {
+      active = false;
+    };
+  }, [displayText, resolvedFontKey]);
+
+  const resetSettings = () => {
+    setTextInput("");
+    setPosition(DEFAULT_POSITION);
+    setRotate(DEFAULT_ROTATE);
+    setFontSize(DEFAULT_FONT_SIZE);
+    setSpaceSize(DEFAULT_SPACE_SIZE);
+    setCurve(false);
+    setVertical(false);
+    setTextColor(activeColor);
+    setStrokeWidth(DEFAULT_STROKE_WIDTH);
+    setStrokeColor(DEFAULT_STROKE_COLOR);
+    setFontKey(DEFAULT_FONT_KEY);
+    setTextBehind(false);
+    setLetterSpacing(0);
+    setCustomImage(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleUpload = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (loadEvent) => {
+      const result = loadEvent.target?.result;
+      if (typeof result === "string") {
+        setLoaded(false);
+        setCustomImage(result);
+      }
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const clearUpload = () => {
+    setLoaded(false);
+    setCustomImage(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const drawText = (ctx) => {
+    if (!displayText) {
+      return;
+    }
+
+    ctx.font = `${fontSize}px ${FONT_STACKS[resolvedFontKey]}`;
+    ctx.lineWidth = strokeWidth;
+    ctx.lineJoin = "round";
+    ctx.miterLimit = 2;
+    ctx.save();
+    ctx.translate(position.x, position.y);
+    ctx.rotate(rotate / 10);
+    ctx.textAlign = "center";
+    ctx.strokeStyle = strokeColor;
+    ctx.fillStyle = textColor;
+
+    const lines = displayText.split("\n");
+    if (curve) {
+      for (const line of lines) {
+        for (let index = 0; index < line.length; index += 1) {
+          ctx.rotate(angle / line.length / 2.5);
+          ctx.save();
+          ctx.translate(0, -1 * fontSize * 3.5);
+          ctx.strokeText(line[index], 0, 0);
+          ctx.fillText(line[index], 0, 0);
+          ctx.restore();
+        }
+      }
+    } else if (vertical) {
+      const letterStep = fontSize + letterSpacing;
+      const lineStep = fontSize + spaceSize - 40;
+      let xOffset = 0;
+      for (const line of lines) {
+        let yOffset = 0;
+        for (let index = 0; index < line.length; index += 1) {
+          ctx.strokeText(line[index], xOffset, yOffset);
+          ctx.fillText(line[index], xOffset, yOffset);
+          yOffset += letterStep;
+        }
+        xOffset += lineStep;
+      }
+    } else {
+      if (letterSpacing === 0) {
         for (let index = 0, offset = 0; index < lines.length; index += 1) {
           ctx.strokeText(lines[index], 0, offset);
           ctx.fillText(lines[index], 0, offset);
           offset += spaceSize;
         }
+      } else {
+        ctx.textAlign = "left";
+        for (let index = 0; index < lines.length; index += 1) {
+          const line = lines[index];
+          const lineY = index * spaceSize;
+          const metrics = ctx.measureText(line);
+          let charX = -metrics.width / 2;
+          for (let charIndex = 0; charIndex < line.length; charIndex += 1) {
+            ctx.strokeText(line[charIndex], charX, lineY);
+            ctx.fillText(line[charIndex], charX, lineY);
+            charX += ctx.measureText(line[charIndex]).width + letterSpacing;
+          }
+        }
+        ctx.textAlign = "center";
       }
-      ctx.restore();
+    }
+    ctx.restore();
+  };
+
+  const draw = (ctx) => {
+    ctx.canvas.width = 296;
+    ctx.canvas.height = 256;
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+    if (!loaded || !img.width || !img.height) {
+      return;
+    }
+
+    const hRatio = ctx.canvas.width / img.width;
+    const vRatio = ctx.canvas.height / img.height;
+    const ratio = Math.min(hRatio, vRatio);
+    const centerShiftX = (ctx.canvas.width - img.width * ratio) / 2;
+    const centerShiftY = (ctx.canvas.height - img.height * ratio) / 2;
+
+    if (textBehind && fontsReady) {
+      drawText(ctx);
+    }
+
+    ctx.drawImage(
+      img,
+      0,
+      0,
+      img.width,
+      img.height,
+      centerShiftX,
+      centerShiftY,
+      img.width * ratio,
+      img.height * ratio
+    );
+    if (!textBehind && fontsReady) {
+      drawText(ctx);
     }
   };
 
   const onPickSearchResult = (result) => {
     setSelectedImage(result);
-    const nextIndex = resolveCharacterIndex(result);
-    if (nextIndex !== null && nextIndex >= 0) {
-      setCharacter(nextIndex);
-    }
   };
 
   const onPickManifestImage = (item) => {
     setSelectedImage(item);
-    const nextIndex = resolveCharacterIndex(item);
-    if (nextIndex !== null && nextIndex >= 0) {
-      setCharacter(nextIndex);
-    }
   };
 
   function b64toBlob(b64Data, contentType = "image/png", sliceSize = 512) {
@@ -219,7 +379,7 @@ function App() {
   const download = () => {
     const canvas = document.getElementsByTagName("canvas")[0];
     const link = document.createElement("a");
-    link.download = `${characters[character].name}_st.ayaka.one.png`;
+    link.download = `${selectedImage?.image_id || "sekai-sticker"}_st.ayaka.one.png`;
     link.href = canvas.toDataURL();
     link.click();
   };
@@ -265,7 +425,7 @@ function App() {
           />
           <div className="search-box">
             <TextField
-              label="检索框"
+              label="检索文本"
               size="small"
               color="secondary"
               value={searchText}
@@ -281,7 +441,64 @@ function App() {
               </div>
             )}
           </div>
+          <div className="search-box">
+            <TextField
+              label="画布文本"
+              size="small"
+              color="secondary"
+              value={textInput}
+              multiline
+              fullWidth
+              onChange={(event) => setTextInput(event.target.value)}
+              placeholder={canvasInputPlaceholder}
+              helperText={
+                textInput.trim()
+                  ? "当前使用画布文本内容"
+                  : searchText.trim()
+                    ? "当前为空，画布将使用检索文本"
+                    : "当前为空，画布将使用默认占位短句"
+              }
+            />
+          </div>
+          <div className="picker">
+            {datasetState.status === "ready" && (
+              <Picker
+                items={datasetState.dataset.items}
+                onPickItem={onPickManifestImage}
+              />
+            )}
+            <SearchPicker
+              datasetState={datasetState}
+              query={searchText}
+              mode={mode}
+              setMode={setMode}
+              onPickResult={onPickSearchResult}
+            />
+          </div>
+          <div className="buttons">
+            <Button color="secondary" onClick={copy}>
+              copy
+            </Button>
+            <Button color="secondary" onClick={download}>
+              download
+            </Button>
+          </div>
           <div className="settings">
+            <div>
+              <label>Font: </label>
+              <TextField
+                select
+                size="small"
+                color="secondary"
+                value={fontKey}
+                onChange={(event) => setFontKey(event.target.value)}
+                className="compact-select"
+              >
+                <MenuItem value="yuruka">YurukaStd</MenuItem>
+                <MenuItem value="fangtang">SSFangTangTi</MenuItem>
+                <MenuItem value="system">System Sans</MenuItem>
+              </TextField>
+            </div>
             <div>
               <label>Rotate: </label>
               <Slider
@@ -323,6 +540,34 @@ function App() {
               />
             </div>
             <div>
+              <label>
+                <nobr>Letter spacing: </nobr>
+              </label>
+              <Slider
+                value={letterSpacing}
+                onChange={(_, value) => setLetterSpacing(value)}
+                min={-10}
+                max={30}
+                step={1}
+                track={false}
+                color="secondary"
+              />
+            </div>
+            <div>
+              <label>
+                <nobr>Stroke width: </nobr>
+              </label>
+              <Slider
+                value={strokeWidth}
+                onChange={(_, value) => setStrokeWidth(value)}
+                min={0}
+                max={30}
+                step={0.5}
+                track={false}
+                color="secondary"
+              />
+            </div>
+            <div>
               <label>Curve (Beta): </label>
               <Switch
                 checked={curve}
@@ -330,59 +575,90 @@ function App() {
                 color="secondary"
               />
             </div>
-          </div>
-          <div className="text">
-            <TextField
-              label="实际文字框"
-              size="small"
-              color="secondary"
-              value={isDerivedText ? searchText : textInput}
-              multiline
-              fullWidth
-              onChange={(event) => setTextInput(event.target.value)}
-              placeholder={
-                selectedImage?.texts?.[0] || characters[character].defaultText.text
-              }
-              InputProps={{
-                sx: isDerivedText
-                  ? {
-                      "& textarea": {
-                        color: "rgba(255, 255, 255, 0.52)",
-                      },
-                    }
-                  : undefined,
-              }}
-              helperText={
-                textInput.trim()
-                  ? "当前使用实际文字框内容"
-                  : searchText.trim()
-                    ? "当前为空，将使用检索框内容"
-                    : "当前为空，将只切换图片不覆写默认文案"
-              }
-            />
-          </div>
-          <div className="picker">
-            {datasetState.status === "ready" && (
-              <Picker
-                items={datasetState.dataset.items}
-                onPickItem={onPickManifestImage}
+            <div>
+              <label>Vertical text: </label>
+              <Switch
+                checked={vertical}
+                onChange={(event) => setVertical(event.target.checked)}
+                color="secondary"
               />
-            )}
-            <SearchPicker
-              datasetState={datasetState}
-              query={searchText}
-              mode={mode}
-              setMode={setMode}
-              onPickResult={onPickSearchResult}
-            />
-          </div>
-          <div className="buttons">
-            <Button color="secondary" onClick={copy}>
-              copy
-            </Button>
-            <Button color="secondary" onClick={download}>
-              download
-            </Button>
+            </div>
+            <div>
+              <label>Text behind image: </label>
+              <Switch
+                checked={textBehind}
+                onChange={(event) => setTextBehind(event.target.checked)}
+                color="secondary"
+              />
+            </div>
+            <div className="color-row">
+              <label>Text color: </label>
+              <input
+                type="color"
+                value={textColor}
+                onChange={(event) => setTextColor(event.target.value)}
+                aria-label="Text color"
+              />
+              <Button
+                color="secondary"
+                variant="outlined"
+                size="small"
+                onClick={() => setTextColor(activeColor)}
+              >
+                Reset
+              </Button>
+            </div>
+            <div className="color-row">
+              <label>Stroke color: </label>
+              <input
+                type="color"
+                value={strokeColor}
+                onChange={(event) => setStrokeColor(event.target.value)}
+                aria-label="Stroke color"
+              />
+              <Button
+                color="secondary"
+                variant="outlined"
+                size="small"
+                onClick={() => setStrokeColor(DEFAULT_STROKE_COLOR)}
+              >
+                Reset
+              </Button>
+            </div>
+            <div className="upload-row">
+              <label>Custom image: </label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleUpload}
+                aria-label="Custom image upload"
+                hidden
+              />
+              <Button
+                color="secondary"
+                variant="outlined"
+                size="small"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                Upload
+              </Button>
+              {customImage && (
+                <Button
+                  color="secondary"
+                  variant="outlined"
+                  size="small"
+                  onClick={clearUpload}
+                >
+                  Clear
+                </Button>
+              )}
+            </div>
+            <div>
+              <Button color="secondary" variant="outlined" onClick={resetSettings}>
+                Reset All
+              </Button>
+            </div>
           </div>
         </div>
       </div>

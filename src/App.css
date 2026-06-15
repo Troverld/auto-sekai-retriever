@@ -48,6 +48,19 @@
   margin-bottom: 1rem;
 }
 
+.settings > div > :first-child {
+  flex-shrink: 0;
+}
+
+.settings .MuiSlider-root,
+.settings .MuiTextField-root {
+  flex: 1;
+}
+
+.compact-select .MuiInputBase-root {
+  color: white;
+}
+
 .text {
   margin-bottom: 1rem;
 }
@@ -83,6 +96,7 @@
   justify-content: center;
   gap: 1rem;
   margin-top: 1rem;
+  flex-wrap: wrap;
 }
 
 .top-alert {
@@ -121,4 +135,19 @@
   padding: 0 0.75rem 0.5rem;
   text-align: left;
   font-size: 0.85rem;
+}
+
+.color-row,
+.upload-row {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+.color-row input[type="color"] {
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
 }

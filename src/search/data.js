@@ -88,6 +88,7 @@ export async function loadSearchDataset() {
       character: manifestItem.character,
       relative_path: manifestItem.relative_path,
       texts: corpusItem.texts,
+      buckets: corpusItem.buckets,
       entries,
       entriesByBucket: new Map(
         BUCKET_ORDER.slice(0, 5).map((bucket) => [

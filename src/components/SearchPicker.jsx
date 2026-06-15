@@ -87,7 +87,7 @@ export default function SearchPicker({
         onClick={(event) => setAnchorEl(event.currentTarget)}
         disabled={!query.trim()}
       >
-        Search picker
+        Search character
       </Button>
       <Popover
         id={id}
