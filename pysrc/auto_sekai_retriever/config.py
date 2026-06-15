@@ -18,6 +18,16 @@ class Phase1Config:
     user_agent: str = "auto-sekai-retriever/0.1"
 
 
+@dataclass(frozen=True)
+class Phase3Config:
+    data_root: Path
+    search_root: Path
+    cache_root: Path
+    embedding_model: str
+    embedding_batch_size: int
+    embedding_pooling: str = "none"
+
+
 def load_phase1_config(project_root: Path | None = None) -> Phase1Config:
     root = project_root or Path.cwd()
     return Phase1Config(
@@ -30,4 +40,18 @@ def load_phase1_config(project_root: Path | None = None) -> Phase1Config:
         request_timeout_seconds=float(os.getenv("ASR_REQUEST_TIMEOUT_SECONDS", "5")),
         request_retries=int(os.getenv("ASR_REQUEST_RETRIES", "3")),
         user_agent=os.getenv("ASR_USER_AGENT", "auto-sekai-retriever/0.1"),
+    )
+
+
+def load_phase3_config(project_root: Path | None = None) -> Phase3Config:
+    root = project_root or Path.cwd()
+    data_root = Path(os.getenv("ASR_DATA_ROOT", root / "data"))
+    search_root = Path(os.getenv("ASR_OUTPUT_ROOT", root / "public" / "search"))
+    cache_root = Path(os.getenv("SENTENCE_TRANSFORMERS_HOME", data_root / "cache" / "huggingface"))
+    return Phase3Config(
+        data_root=data_root,
+        search_root=search_root,
+        cache_root=cache_root,
+        embedding_model=os.getenv("ASR_EMBEDDING_MODEL", "BAAI/bge-large-zh-v1.5"),
+        embedding_batch_size=int(os.getenv("ASR_EMBEDDING_BATCH_SIZE", "16")),
     )

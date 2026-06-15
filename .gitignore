@@ -30,3 +30,6 @@ src/*.old
 .venv/
 __pycache__/
 .pytest_cache/
+data/cache/
+data/interim/
+public/search/embeddings.json
