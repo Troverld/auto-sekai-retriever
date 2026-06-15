@@ -4,6 +4,8 @@ Auto Sekai Retriever is a static web app for searching and generating Project Se
 
 It starts from a sticker-generator UI fork, but the current project focuses on a different problem: semantic retrieval. Instead of browsing images manually or relying on filename matching, users can type natural Chinese queries and retrieve fitting blank stickers directly in the browser, then add custom text and export the result.
 
+The app is deployed via github pages. Try it online at <https://troverld.github.io/auto-sekai-retriever>!
+
 ## What It Does
 
 - Semantic sticker search in the browser
