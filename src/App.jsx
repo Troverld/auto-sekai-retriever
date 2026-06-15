@@ -393,6 +393,10 @@ function App() {
         </Alert>
       )}
       <div className="container">
+        <header className="hero">
+          <h1>Auto Sekai Retriever</h1>
+          <p>支持中文检索 Project Sekai 表情贴纸，并快速生成对应表情图。</p>
+        </header>
         <div className="vertical">
           <div className="canvas">
             <Canvas draw={draw} />

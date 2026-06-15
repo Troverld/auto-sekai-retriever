@@ -10,6 +10,28 @@
   flex-direction: column;
 }
 
+.hero {
+  width: min(720px, calc(100vw - 32px));
+  margin: 0 auto 1.5rem;
+  color: white;
+  text-align: center;
+}
+
+.hero h1 {
+  margin: 0;
+  font-family: "YurukaStd", sans-serif;
+  font-size: clamp(2.2rem, 5vw, 3.5rem);
+  line-height: 1;
+  letter-spacing: 0.03em;
+}
+
+.hero p {
+  margin: 0.7rem 0 0;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: clamp(0.95rem, 2.2vw, 1.1rem);
+  line-height: 1.6;
+}
+
 .canvas {
   height: 256px;
   width: 296px;
@@ -37,7 +59,6 @@
 
 .settings {
   color: white;
-  font-family: "YurukaStd";
   margin: 1.5rem 0;
 }
 
@@ -117,7 +138,6 @@
   align-items: center;
   gap: 0.5rem;
   color: white;
-  font-family: "YurukaStd";
   font-size: 0.9rem;
 }
 
