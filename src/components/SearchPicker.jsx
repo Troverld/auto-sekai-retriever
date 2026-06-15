@@ -13,6 +13,7 @@ import { useEffect, useMemo, useState } from "react";
 import { MODE_WEIGHTS } from "../search/constants";
 import { embedQueryText } from "../search/queryEmbedder";
 import { rankSearchResults } from "../search/data";
+import { assetUrl } from "../utils/assetPaths";
 
 export default function SearchPicker({
   datasetState,
@@ -164,7 +165,7 @@ export default function SearchPicker({
                 }}
               >
                 <img
-                  src={`/${item.relative_path}`}
+                  src={assetUrl(item.relative_path)}
                   alt={item.image_id}
                   loading="lazy"
                 />

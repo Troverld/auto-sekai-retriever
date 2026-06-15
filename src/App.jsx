@@ -14,6 +14,7 @@ import Picker from "./components/Picker";
 import SearchPicker from "./components/SearchPicker";
 import CHARACTER_COLOR_MAP from "./constants/characterColors";
 import { loadSearchDataset } from "./search/data";
+import { assetUrl } from "./utils/assetPaths";
 
 const { ClipboardItem } = window;
 const DEFAULT_SPACE_SIZE = 25;
@@ -146,7 +147,7 @@ function App() {
     image.src = customImage
       ? customImage
       : selectedImage
-        ? `/${selectedImage.relative_path}`
+        ? assetUrl(selectedImage.relative_path)
         : "";
     image.onload = () => setLoaded(true);
     return image;

@@ -6,6 +6,7 @@ import {
   TextField,
 } from "@mui/material";
 import { useMemo, useState } from "react";
+import { assetUrl } from "../utils/assetPaths";
 
 export default function Picker({ items, onPickItem }) {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -88,8 +89,8 @@ export default function Picker({ items, onPickItem }) {
                 }}
               >
                 <img
-                  src={`/${item.relative_path}`}
-                  srcSet={`/${item.relative_path}`}
+                  src={assetUrl(item.relative_path)}
+                  srcSet={assetUrl(item.relative_path)}
                   alt={item.image_id}
                   loading="lazy"
                 />

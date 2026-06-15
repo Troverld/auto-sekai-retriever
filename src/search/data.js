@@ -5,6 +5,7 @@ import {
   softmaxWeights,
   weightedAverageVector,
 } from "./math";
+import { assetUrl } from "../utils/assetPaths";
 
 function bucketScore(entries, queryVector) {
   if (entries.length === 0) {
@@ -37,10 +38,10 @@ function buildGlobalAverageScore(entries, queryVector) {
 export async function loadSearchDataset() {
   const [manifestResponse, corpusResponse, metaResponse, binaryResponse] =
     await Promise.all([
-      fetch("/search/manifest.json"),
-      fetch("/search/corpus.json"),
-      fetch("/search/embeddings.meta.json"),
-      fetch("/search/embeddings.int8.bin"),
+      fetch(assetUrl("/search/manifest.json")),
+      fetch(assetUrl("/search/corpus.json")),
+      fetch(assetUrl("/search/embeddings.meta.json")),
+      fetch(assetUrl("/search/embeddings.int8.bin")),
     ]);
 
   if (!manifestResponse.ok || !corpusResponse.ok || !metaResponse.ok || !binaryResponse.ok) {
