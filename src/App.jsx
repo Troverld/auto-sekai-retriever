@@ -432,7 +432,7 @@ function App() {
               multiline
               fullWidth
               onChange={(event) => setSearchText(event.target.value)}
-              placeholder="为空时沿用原始 Pick character 模式"
+              placeholder="为空时不检索"
             />
             {datasetState.status === "loading" && (
               <div className="search-inline-status">
