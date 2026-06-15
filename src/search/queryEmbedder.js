@@ -2,7 +2,7 @@ import { env, pipeline } from "@huggingface/transformers";
 
 import { QUERY_MODEL_ID } from "./constants";
 import { l2Normalize } from "./math";
-import { PUBLIC_BASE, assetUrl } from "../utils/assetPaths";
+import { assetUrl } from "../utils/assetPaths";
 
 let extractorPromise = null;
 let queryEmbedderConfig = null;
@@ -83,7 +83,7 @@ export async function getQueryEmbedder() {
     env.allowLocalModels = true;
     env.allowRemoteModels = false;
     env.useBrowserCache = false;
-    env.localModelPath = PUBLIC_BASE ? `${PUBLIC_BASE}/models/` : assetUrl("/models/");
+    env.localModelPath = assetUrl("/models/");
     queryEmbedderConfig = {
       model: QUERY_MODEL_ID,
       allowLocalModels: env.allowLocalModels,

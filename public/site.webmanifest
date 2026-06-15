@@ -1,6 +1,6 @@
 {
-    "name": "Project Sekai Stickers",
-    "short_name": "Pjsk Stickers",
+    "name": "Auto Sekai Retriever",
+    "short_name": "Sekai Retriever",
     "icons": [
       {
         "src": "android-chrome-192x192.png",
@@ -21,8 +21,8 @@
     "theme_color": "#cf93d9",
     "background_color": "#121212",
     "display": "standalone",
-    "description": "Make your own Project sekai stickers!",
-    "start_url": "https://st.ayaka.one/",
+    "description": "Search Project Sekai stickers with local semantic retrieval and edit the final canvas in the browser.",
+    "start_url": ".",
     "dir": "ltr",
     "lang": "en",
     "orientation": "portrait",

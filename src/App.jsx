@@ -380,7 +380,7 @@ function App() {
   const download = () => {
     const canvas = document.getElementsByTagName("canvas")[0];
     const link = document.createElement("a");
-    link.download = `${selectedImage?.image_id || "sekai-sticker"}_st.ayaka.one.png`;
+    link.download = `${selectedImage?.image_id || "sekai-sticker"}.png`;
     link.href = canvas.toDataURL();
     link.click();
   };

@@ -83,7 +83,7 @@ def build_quantized_outputs(payload: dict[str, Any]) -> tuple[bytes, dict[str, A
         "version": 1,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "source": {
-            "path": "public/search/embeddings.json",
+            "path": "embeddings.json",
             "model": payload["model"],
             "pooling": payload["pooling"],
             "corpus_model": payload.get("corpus_model"),

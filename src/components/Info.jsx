@@ -11,6 +11,8 @@ import ListItemAvatar from "@mui/material/ListItemAvatar";
 import Avatar from "@mui/material/Avatar";
 import Typography from "@mui/material/Typography";
 
+const REPOSITORY_URL = "https://github.com/troverld/auto-sekai-retriever";
+
 export default function Info({ open, handleClose, config }) {
   return (
     <div>
@@ -83,7 +85,7 @@ export default function Info({ open, handleClose, config }) {
                 button
                 onClick={() =>
                   (window.location.href =
-                    "https://github.com/TheOriginalAyaka/sekai-stickers/graphs/contributors")
+                    `${REPOSITORY_URL}/graphs/contributors`)
                 }
               >
                 <ListItemAvatar>
@@ -105,8 +107,7 @@ export default function Info({ open, handleClose, config }) {
               <ListItem
                 button
                 onClick={() =>
-                  (window.location.href =
-                    "https://github.com/TheOriginalAyaka/sekai-stickers")
+                  (window.location.href = REPOSITORY_URL)
                 }
               >
                 <ListItemAvatar>
@@ -116,29 +117,6 @@ export default function Info({ open, handleClose, config }) {
                   />
                 </ListItemAvatar>
                 <ListItemText primary="GitHub" secondary="Source Code" />
-              </ListItem>
-            </List>
-            <Typography variant="h6" component="h3">
-              The discord bot:
-            </Typography>
-            <List>
-              <ListItem
-                button
-                onClick={() =>
-                  (window.location.href =
-                    "http://link.ayaka.one/stbot")
-                }
-              >
-                <ListItemAvatar>
-                  <Avatar
-                    alt="Discord"
-                    src="https://cdn.discordapp.com/embed/avatars/0.png"
-                  />
-                </ListItemAvatar>
-                <ListItemText
-                  primary="Sekai Stickers"
-                  secondary="Add more fun to your server."
-                />
               </ListItem>
             </List>
             <Typography variant="h6" component="h3">

@@ -2,7 +2,7 @@
   "version": 1,
   "generated_at": "2026-06-15T07:47:17.595079+00:00",
   "source": {
-    "path": "public/search/embeddings.json",
+    "path": "embeddings.json",
     "model": "BAAI/bge-small-zh-v1.5",
     "pooling": "none",
     "corpus_model": "gpt-5.4"
